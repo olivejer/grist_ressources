@@ -1991,7 +1991,9 @@
             for (const [tableName, columns] of Object.entries(EVENTFLOW_SCHEMA)) {
                 let existingCols = [], tableExists = false;
                 try { existingCols = Object.keys(await grist.docApi.fetchTable(tableName)).filter(c => c !== 'id' && c !== 'manualSort'); tableExists = true; }
-                catch (e) { try { await grist.docApi.applyUserActions([['AddTable', tableName, columns.map(c => ({ id: c.id, type: c.type }))]]); tablesCreated.push(tableName); created++; continue; } catch (e2) { continue; } }
+                catch (e) { 
+                    console.log(`Table ${tableName} not found, creating...`);
+                    try { await grist.docApi.applyUserActions([['AddTable', tableName, columns.map(c => ({ id: c.id, type: c.type }))]]); tablesCreated.push(tableName); created++; continue; } catch (e2) { continue; } }
                 if (tableExists) { const missing = columns.filter(c => !existingCols.includes(c.id)); for (const col of missing) { try { await grist.docApi.applyUserActions([['AddColumn', tableName, col.id, { type: col.type }]]); added++; } catch (e) {} } }
             }
             if (created > 0 || added > 0) showToast('Schema initialisé (' + created + ' tables, ' + added + ' colonnes)', 'success');
