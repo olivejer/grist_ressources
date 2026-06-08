@@ -1987,6 +1987,7 @@
         async function ensureSchema() {
             let created = 0, added = 0;
             const tablesCreated = [];
+            console.log(`<<<<<<<>>>>>>>Start EnsureSchema`);
 
             for (const [tableName, columns] of Object.entries(EVENTFLOW_SCHEMA)) {
                 let existingCols = [], tableExists = false;
