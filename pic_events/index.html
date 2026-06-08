@@ -138,17 +138,6 @@
         .gantt-bar.narrow-bar .gantt-bar-label { display: none; }
         .gantt-bar:not(.narrow-bar) .gantt-bar-external-label { display: none; }
 
-        /* Milestones */
-        .gantt-milestone { position: absolute; cursor: pointer; z-index: 15; display: flex; align-items: center; gap: 4px; }
-        .milestone-diamond { width: 14px; height: 14px; transform: rotate(45deg); border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
-        .gantt-milestone.p1 .milestone-diamond { background: var(--danger); }
-        .gantt-milestone.p2 .milestone-diamond { background: var(--warning); }
-        .gantt-milestone.p3 .milestone-diamond { background: var(--info); }
-        .gantt-milestone.p4 .milestone-diamond { background: var(--text-muted); }
-        .gantt-milestone.selected .milestone-diamond { outline: 2px solid var(--primary); outline-offset: 2px; }
-        .gantt-milestone:hover .milestone-diamond { transform: rotate(45deg) scale(1.15); }
-        .milestone-label { font-size: 0.68rem; color: var(--text); white-space: nowrap; font-weight: 500; }
-
         /* Dependencies */
         .dependencies-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
         .dependency-line { fill: none; stroke: var(--text-muted); stroke-width: 1.5; stroke-dasharray: 4 2; }
@@ -170,7 +159,6 @@
         .legend { display: flex; gap: 14px; padding: 8px 16px; background: var(--card-bg); border-top: 1px solid var(--border); font-size: 0.7rem; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
         .legend-item { display: flex; align-items: center; gap: 5px; }
         .legend-color { width: 10px; height: 10px; border-radius: 2px; }
-        .legend-milestone { width: 8px; height: 8px; background: var(--text-muted); transform: rotate(45deg); }
         .legend-separator { width: 1px; height: 16px; background: var(--border); }
 
         /* Panel Slide-in */
@@ -393,7 +381,6 @@
             <button class="tab-button" onclick="switchTab('salles', event)">Salles</button>
             <!-- Autres onglets peuvent être ajoutés ici -->
         </div>
-        @jeromeolive - v0.0.1
         <div class="tabs-content">
             <div class="tab-pane active" id="tab-gantt">
     <div class="header">
@@ -568,7 +555,7 @@
         ];
         const PRIORITY_COLORS = { 1: '#ef4444', 2: '#f59e0b', 3: '#3b82f6', 4: '#64748b' };
         const STATUS_LABELS = { todo: 'À faire', inprogress: 'En cours', review: 'En revue', done: 'Terminé' };
-        const TYPE_ICONS = { tache: '', jalon: '◆', reunion: '' };
+        const TYPE_ICONS = { tache: '' };
         const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
         const MONTHS_SHORT = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 
@@ -617,7 +604,7 @@
         const getDaysDiff = (a, b) => Math.round((b - a) / 86400000);
         const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
         const getEventPriority = (t) => (t?.priorite >= 1 && t?.priorite <= 4) ? parseInt(t.priorite) : 3;
-        const isJalon = (t) => t?.type === 'jalon';
+
 
         function showToast(msg, type = 'info') { const c = document.getElementById('toastContainer'); const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg; c.appendChild(t); setTimeout(() => t.remove(), 3000); }
         
@@ -1105,7 +1092,6 @@
                 const p = getEventPriority(t);
                 const start = gristToDate(t.dateDebut);
                 const end = gristToDate(t.dateEcheance);
-                const jalon = isJalon(t);
                 const selected = t.id === selectedEventId;
                 const assignees = getAssigneesArray(t);
                 const avatarsHtml = assignees.length ? '<div class="event-avatars">' + assignees.slice(0, 2).map(id => '<div class="event-avatar" style="background:' + getroomsMemberColor(id) + '">' + getInitials(getroomsMemberName(id)) + '</div>').join('') + (assignees.length > 2 ? '<div class="event-avatar more">+' + (assignees.length - 2) + '</div>' : '') + '</div>' : '';
@@ -1117,7 +1103,7 @@
                     '<span class="drag-handle">☰</span>' +
                     '<div class="event-priority-bar p' + p + '"></div>' +
                     '<div class="event-info">' +
-                        '<div class="event-name">' + (jalon ? '◆ ' : '') + (escapeHtml(t.titre) || 'Sans titre') + '</div>' +
+                        '<div class="event-name">' + (escapeHtml(t.titre) || 'Sans titre') + '</div>' +
                         '<div class="event-meta">' +
                             '<span class="event-dates">' + formatDateShort(start) + ' → ' + formatDateShort(end) + '</span>' +
                             subBadge +
@@ -1221,7 +1207,6 @@
 
                 const p = getEventPriority(t);
                 const ownerColor = getOwnerColor(t.owner);
-                const jalon = isJalon(t);
                 const top = idx * 44 + 10;
                 const startOffset = getDaysDiff(start, tStart);
                 const duration = Math.max(getDaysDiff(tStart, tEnd) + 1, 1);
@@ -1232,36 +1217,24 @@
                 // Sécurité : ignorer les tâches vraiment hors plage (ne devrait pas arriver)
                 if (left + width < -50 || left > totalWidth + 50) return;
 
-                if (jalon) {
-                    const m = document.createElement('div');
-                    m.className = 'gantt-milestone' + (selected ? ' selected' : '');
-                    m.dataset.id = t.id;
-                    m.style.left = Math.max(0, left + Math.round(pxPerDay / 2) - 7) + 'px';
-                    m.style.top = top + 'px';
-                    m.innerHTML = '<div class="milestone-diamond" style="background: ' + ownerColor + ';"></div><span class="milestone-label">' + escapeHtml(t.titre) + '</span>';
-                    m.onclick = () => openEventPanel(t.id);
-                    setupTooltip(m, t);
-                    grid.appendChild(m);
-                } else {
-                    const bar = document.createElement('div');
-                    const barLeft = Math.max(0, left);
-                    const barWidth = Math.max(width - (barLeft - left), 12);  // min 12px visible
-                    const isNarrow = barWidth < 60;  // GANTT-04: Seuil pour label externe
-                    bar.className = 'gantt-bar' + (selected ? ' selected' : '') + (isNarrow ? ' narrow-bar' : '');
-                    bar.dataset.id = t.id;
-                    bar.style.left = barLeft + 'px';
-                    bar.style.top = top + 'px';
-                    bar.style.width = barWidth + 'px';
-                    bar.style.background = 'linear-gradient(135deg, ' + ownerColor + ', ' + adjustColor(ownerColor, -20) + ')';
-                    bar.innerHTML = '<div class="resize-handle left" onmousedown="startDrag(event, this.parentElement, \'resize-left\')"></div>' +
-                        '<span class="gantt-bar-label" style="position:relative;z-index:1;">' + escapeHtml(t.titre) + '</span>' +
-                        '<div class="resize-handle right" onmousedown="startDrag(event, this.parentElement, \'resize-right\')"></div>' +
-                        '<span class="gantt-bar-external-label">' + escapeHtml(t.titre) + '</span>';
-                    bar.onclick = (e) => { if (!e.target.classList.contains('resize-handle')) openEventPanel(t.id); };
-                    bar.onmousedown = (e) => { if (!e.target.classList.contains('resize-handle')) startDrag(e, bar, 'move'); };
-                    setupTooltip(bar, t);
-                    grid.appendChild(bar);
-                }
+                const bar = document.createElement('div');
+                const barLeft = Math.max(0, left);
+                const barWidth = Math.max(width - (barLeft - left), 12);  // min 12px visible
+                const isNarrow = barWidth < 60;  // GANTT-04: Seuil pour label externe
+                bar.className = 'gantt-bar' + (selected ? ' selected' : '') + (isNarrow ? ' narrow-bar' : '');
+                bar.dataset.id = t.id;
+                bar.style.left = barLeft + 'px';
+                bar.style.top = top + 'px';
+                bar.style.width = barWidth + 'px';
+                bar.style.background = 'linear-gradient(135deg, ' + ownerColor + ', ' + adjustColor(ownerColor, -20) + ')';
+                bar.innerHTML = '<div class="resize-handle left" onmousedown="startDrag(event, this.parentElement, \'resize-left\')"></div>' +
+                    '<span class="gantt-bar-label" style="position:relative;z-index:1;">' + escapeHtml(t.titre) + '</span>' +
+                    '<div class="resize-handle right" onmousedown="startDrag(event, this.parentElement, \'resize-right\')"></div>' +
+                    '<span class="gantt-bar-external-label">' + escapeHtml(t.titre) + '</span>';
+                bar.onclick = (e) => { if (!e.target.classList.contains('resize-handle')) openEventPanel(t.id); };
+                bar.onmousedown = (e) => { if (!e.target.classList.contains('resize-handle')) startDrag(e, bar, 'move'); };
+                setupTooltip(bar, t);
+                grid.appendChild(bar);
             });
 
             renderDependencies(ft, start, pxPerDay);
@@ -1492,9 +1465,9 @@
             ).join('');
             const subeventsDone = (data.subevents || []).filter(st => st.done).length;
             const subeventsTotal = (data.subevents || []).length;
-            const descLabel = data.type === 'reunion' ? 'Ordre du jour' : data.type === 'jalon' ? "Critères d'acceptation" : 'Description';
-            const assignLabel = data.type === 'reunion' ? 'Salles' : 'Salles';
-            const titlePlaceholder = data.type === 'jalon' ? 'Nom du jalon...' : data.type === 'reunion' ? 'Sujet de la réunion...' : 'Titre de l\'événement...';
+            const descLabel = 'Description';
+            const assignLabel = 'Salles';
+            const titlePlaceholder = 'Titre de l\'événement...';
 
             const assigneesChips = data.assignees.map(id =>
                 '<span class="multi-select-chip">' + escapeHtml(getroomsMemberName(id)) + '<span class="remove" onclick="event.stopPropagation();removeAssignee(' + id + ')">×</span></span>'
@@ -1540,32 +1513,23 @@
 
             content.innerHTML =
                 '<div class="panel-accent-bar" style="background:' + priorityColor + '"></div>' +
-                '<div class="panel-type-row">' +
-                    '<span class="type-pill ' + (data.type === 'tache' ? 'selected' : '') + '" onclick="updateField(\'type\',\'tache\')">Événement</span>' +
-                    '<span class="type-pill ' + (data.type === 'jalon' ? 'selected' : '') + '" onclick="updateField(\'type\',\'jalon\')">◆ Jalon</span>' +
-                    '<span class="type-pill ' + (data.type === 'reunion' ? 'selected' : '') + '" onclick="updateField(\'type\',\'reunion\')"> Réunion</span>' +
-                '</div>' +
                 '<input type="text" class="panel-title-edit" id="eventTitle" placeholder="' + titlePlaceholder + '" value="' + escapeHtml(data.titre) + '" oninput="updateField(\'titre\', this.value, true)">' +
 
                 '<div class="props-list">' +
                     '<div class="prop-row"><span class="prop-label">Statut</span><div class="prop-value"><div class="status-selector">' +
                         '<div class="status-pill ' + (data.statut === 'todo' ? 'selected' : '') + '" onclick="updateField(\'statut\',\'todo\')">À faire</div>' +
-                        (data.type !== 'jalon' ?
-                            '<div class="status-pill ' + (data.statut === 'inprogress' ? 'selected' : '') + '" onclick="updateField(\'statut\',\'inprogress\')">En cours</div>' +
-                            '<div class="status-pill ' + (data.statut === 'review' ? 'selected' : '') + '" onclick="updateField(\'statut\',\'review\')">En revue</div>' : '') +
+                        '<div class="status-pill ' + (data.statut === 'inprogress' ? 'selected' : '') + '" onclick="updateField(\'statut\',\'inprogress\')">En cours</div>' +
+                        '<div class="status-pill ' + (data.statut === 'review' ? 'selected' : '') + '" onclick="updateField(\'statut\',\'review\')">En revue</div>' +
                         '<div class="status-pill ' + (data.statut === 'done' ? 'selected' : '') + '" onclick="updateField(\'statut\',\'done\')">Terminé</div>' +
                     '</div></div></div>' +
-                    (data.type !== 'reunion' ?
-                        '<div class="prop-row"><span class="prop-label">Priorité</span><div class="prop-value"><div class="priority-selector">' +
+                    '<div class="prop-row"><span class="prop-label">Priorité</span><div class="prop-value"><div class="priority-selector">' +
                             '<div class="priority-pill p1 ' + (data.priorite == '1' ? 'selected' : '') + '" onclick="updateField(\'priorite\',\'1\')">Critique</div>' +
                             '<div class="priority-pill p2 ' + (data.priorite == '2' ? 'selected' : '') + '" onclick="updateField(\'priorite\',\'2\')">Haute</div>' +
                             '<div class="priority-pill p3 ' + (data.priorite == '3' ? 'selected' : '') + '" onclick="updateField(\'priorite\',\'3\')">Moyenne</div>' +
                             '<div class="priority-pill p4 ' + (data.priorite == '4' ? 'selected' : '') + '" onclick="updateField(\'priorite\',\'4\')">Basse</div>' +
-                        '</div></div></div>' : '') +
-                    '<div class="prop-row"><span class="prop-label">Date' + (data.type === 'jalon' ? '' : 's') + '</span><div class="prop-value">' +
-                        (data.type === 'jalon' ?
-                            '<div class="dates-inline"><input type="date" value="' + formatDateISO(s) + '" onchange="updateField(\'dateDebut\', this.value); updateField(\'dateEcheance\', this.value)"><button class="today-btn" onclick="setTodayDate()">Auj.</button></div>' :
-                            '<div class="dates-inline"><input type="date" value="' + formatDateISO(s) + '" onchange="updateField(\'dateDebut\', this.value)"><span class="dates-arrow">→</span><input type="date" value="' + formatDateISO(e) + '" onchange="updateField(\'dateEcheance\', this.value)"><button class="today-btn" onclick="setTodayDate()">Auj.</button></div>') +
+                        '</div></div></div>' +
+                    '<div class="prop-row"><span class="prop-label">Dates</span><div class="prop-value">' +
+                        '<div class="dates-inline"><input type="date" value="' + formatDateISO(s) + '" onchange="updateField(\'dateDebut\', this.value)"><span class="dates-arrow">→</span><input type="date" value="' + formatDateISO(e) + '" onchange="updateField(\'dateEcheance\', this.value)"><button class="today-btn" onclick="setTodayDate()">Auj.</button></div>' +
                     '</div></div>' +
                     '<div class="prop-row"><span class="prop-label">Propriétaire</span><div class="prop-value"><div class="owner-select-wrap"><span class="owner-color-dot" style="background:' + ownerColor + '"></span><select class="form-select" onchange="updateField(\'owner\', parseInt(this.value) || null)"><option value="">Aucun propriétaire</option>' + ownerOptions + '</select></div></div></div>' +
                     '<div class="prop-row"><span class="prop-label">' + assignLabel + '</span><div class="prop-value"><div class="multi-select" id="assigneesSelect"><div class="multi-select-trigger" onclick="toggleMultiSelect(\'assigneesSelect\')"><div class="multi-select-values">' + (assigneesChips || '<span class="multi-select-placeholder">Ajouter une salle...</span>') + '</div><span class="multi-select-arrow">▾</span></div><div class="multi-select-dropdown">' + (assigneesOptions || '<div class="multi-select-empty">Aucune salle</div>') + '</div></div></div></div>' +
@@ -1574,21 +1538,15 @@
                 '<div class="panel-section"><div class="panel-section-header"><span class="panel-section-title">' + descLabel + '</span></div>' +
                 '<div class="form-group"><textarea class="form-textarea" placeholder="' + descLabel + '..." oninput="updateField(\'description\', this.value, true)">' + escapeHtml(data.description) + '</textarea></div></div>' +
 
-                (data.type === 'jalon' ?
-                    '<div class="panel-section"><div class="panel-section-header"><span class="panel-section-title">Prérequis</span>' + (data.dependDe.length ? '<span class="panel-section-badge">' + doneCount + '/' + data.dependDe.length + '</span>' : '') + '</div>' +
-                    '<div class="prereq-list">' + (prereqHtml || '<div class="prereq-empty">Aucune dépendance — liez des événements amont via le panneau d\'un événement.</div>') + '</div></div>' :
-                    '<div class="panel-section"><div class="panel-section-header"><span class="panel-section-title">' + (data.type === 'reunion' ? 'Points à traiter' : 'Checklist') + '</span>' + (subeventsTotal > 0 ? '<span class="panel-section-badge">' + subeventsDone + '/' + subeventsTotal + '</span>' : '') + '</div>' +
+                '<div class="panel-section"><div class="panel-section-header"><span class="panel-section-title">Checklist</span>' + (subeventsTotal > 0 ? '<span class="panel-section-badge">' + subeventsDone + '/' + subeventsTotal + '</span>' : '') + '</div>' +
                     '<div class="subevent-list">' + (data.subevents || []).map(function(st) { return '<div class="subevent-item ' + (st.done ? 'done' : '') + '"><input type="checkbox" class="subevent-checkbox" ' + (st.done ? 'checked' : '') + ' onchange="toggleSubevent(' + st.id + ')"><span class="subevent-text">' + escapeHtml(st.text) + '</span><button class="subevent-remove" onclick="removeSubevent(' + st.id + ')">×</button></div>'; }).join('') + '</div>' +
-                    '<div class="subevent-add"><input type="text" id="newSubeventInput" placeholder="Ajouter..." onkeydown="handleSubeventKeydown(event)"><button onclick="addSubevent()">+</button></div></div>') +
+                    '<div class="subevent-add"><input type="text" id="newSubeventInput" placeholder="Ajouter..." onkeydown="handleSubeventKeydown(event)"><button onclick="addSubevent()">+</button></div></div>' +
 
-                (data.type !== 'jalon' ?
-                    '<div class="panel-section"><div class="panel-section-header"><span class="panel-section-title">Détails</span></div>' +
-                    (data.type !== 'reunion' ?
-                        '<div class="form-group"><div class="time-row"><div class="time-group"><label>Estimé</label><div class="time-input-wrap"><input type="number" min="0" step="0.5" value="' + (estim || '') + '" placeholder="0" onchange="updateField(\'estimationH\', parseFloat(this.value) || null)"><span>h</span></div></div><div class="time-group"><label>Passé</label><div class="time-input-wrap"><input type="number" min="0" step="0.5" value="' + (passe || '') + '" placeholder="0" onchange="updateField(\'tempsPasse\', parseFloat(this.value) || null)"><span>h</span></div></div></div>' + (estim > 0 ? '<div class="time-bar"><div class="time-bar-fill ' + (timeOver ? 'over' : '') + '" style="width:' + timePercent + '%"></div></div>' : '') + '</div>' : '') +
+                '<div class="panel-section"><div class="panel-section-header"><span class="panel-section-title">Détails</span></div>' +
+                    '<div class="form-group"><div class="time-row"><div class="time-group"><label>Estimé</label><div class="time-input-wrap"><input type="number" min="0" step="0.5" value="' + (estim || '') + '" placeholder="0" onchange="updateField(\'estimationH\', parseFloat(this.value) || null)"><span>h</span></div></div><div class="time-group"><label>Passé</label><div class="time-input-wrap"><input type="number" min="0" step="0.5" value="' + (passe || '') + '" placeholder="0" onchange="updateField(\'tempsPasse\', parseFloat(this.value) || null)"><span>h</span></div></div></div>' + (estim > 0 ? '<div class="time-bar"><div class="time-bar-fill ' + (timeOver ? 'over' : '') + '" style="width:' + timePercent + '%"></div></div>' : '') + '</div>' +
                     '<div class="form-group"><div class="tags-input" onclick="document.getElementById(\'tagInput\').focus()">' + tagsChips + '<input type="text" id="tagInput" placeholder="' + (data.tags.length ? '' : 'Ajouter un tag...') + '" onkeydown="handleTagKeydown(event)"></div></div>' +
-                    (data.type !== 'reunion' ?
-                        '<div class="form-group"><div class="multi-select" id="depsSelect"><div class="multi-select-trigger" onclick="toggleMultiSelect(\'depsSelect\')"><div class="multi-select-values">' + (depsChips || '<span class="multi-select-placeholder">Dépendances...</span>') + '</div><span class="multi-select-arrow">▾</span></div><div class="multi-select-dropdown">' + (depsOptions || '<div class="multi-select-empty">Aucune</div>') + '</div></div>' + blockedHtml + '</div>' : '') +
-                    '</div>' : '') +
+                    '<div class="form-group"><div class="multi-select" id="depsSelect"><div class="multi-select-trigger" onclick="toggleMultiSelect(\'depsSelect\')"><div class="multi-select-values">' + (depsChips || '<span class="multi-select-placeholder">Dépendances...</span>') + '</div><span class="multi-select-arrow">▾</span></div><div class="multi-select-dropdown">' + (depsOptions || '<div class="multi-select-empty">Aucune</div>') + '</div></div>' + blockedHtml + '</div>' +
+                    '</div>' +
 
                 (!panelState.isNew ?
                     '<div class="panel-footer-left"><button class="panel-btn danger" onclick="showDeleteConfirm()" style="width:auto;padding:10px 14px">Suppr.</button></div><div class="delete-confirm" id="deleteConfirm"><div class="delete-confirm-text">Supprimer ?</div><div class="delete-confirm-actions"><button class="delete-confirm-btn cancel" onclick="hideDeleteConfirm()">Annuler</button><button class="delete-confirm-btn confirm" onclick="confirmDelete()">Supprimer</button></div></div>' : '');
@@ -1614,10 +1572,6 @@
 
             data[field] = value;
 
-            if (field === 'type' && value === 'jalon' && data.dateDebut) {
-                data.dateEcheance = data.dateDebut;
-            }
-
             // FIX: Synchroniser le event local pour affichage immédiat
             syncLocalEvent();
 
@@ -1642,7 +1596,6 @@
             const today = new Date();
             today.setHours(12, 0, 0, 0);
             data.dateDebut = dateToGrist(today);
-            if (data.type === 'jalon') data.dateEcheance = data.dateDebut;
             syncLocalEvent();
             if (!panelState.isNew && gristReady) saveEventToGrist();
             renderPanel();
@@ -1878,7 +1831,7 @@
         function startDrag(e, bar, type) {
             const id = parseInt(bar.dataset.id);
             const event = events.find(t => t.id === id);
-            if (!event || isJalon(event)) return;
+            if (!event) return;
 
             e.preventDefault();
             e.stopPropagation();
@@ -2076,13 +2029,13 @@
                 { id: 1, titre: 'Analyse besoins', priorite: '1', owner: 1, dateDebut: day(-10), dateEcheance: day(-5), statut: 'done', type: 'tache', assignees: ['L', 1], tags: ['L', 'documentation'] },
                 { id: 2, titre: 'Dev Backend', priorite: '1', owner: 1, dateDebut: day(-4), dateEcheance: day(2), statut: 'inprogress', type: 'tache', dependDe: ['L', 1], assignees: ['L', 1, 2], estimationH: 32, tempsPasse: 12 },
                 { id: 3, titre: 'Design UI', priorite: '2', owner: 2, dateDebut: day(-5), dateEcheance: day(1), statut: 'review', type: 'tache', assignees: ['L', 3] },
-                { id: 4, titre: 'Livraison MVP', priorite: '1', owner: 1, dateDebut: day(15), dateEcheance: day(15), statut: 'todo', type: 'jalon', dependDe: ['L', 2], assignees: ['L', 1] },
+                { id: 4, titre: 'Livraison MVP', priorite: '1', owner: 1, dateDebut: day(15), dateEcheance: day(15), statut: 'todo', type: 'tache', dependDe: ['L', 2], assignees: ['L', 1] },
                 { id: 5, titre: 'Tests QA', priorite: '3', owner: 2, dateDebut: day(5), dateEcheance: day(12), statut: 'todo', type: 'tache', assignees: ['L', 2], tags: ['L', 'qa', 'tests'] },
                 { id: 6, titre: 'Documentation', priorite: '4', owner: 3, dateDebut: day(-2), dateEcheance: day(-1), statut: 'inprogress', type: 'tache', assignees: ['L', 3] },
                 { id: 7, titre: 'Correction bugs', priorite: '2', owner: 1, dateDebut: day(0), dateEcheance: day(3), statut: 'inprogress', type: 'tache', assignees: ['L', 2] },
-                { id: 8, titre: 'Réunion client', priorite: '2', owner: 2, dateDebut: day(7), dateEcheance: day(7), statut: 'todo', type: 'reunion', assignees: ['L', 1, 3] },
+                { id: 8, titre: 'Réunion client', priorite: '2', owner: 2, dateDebut: day(7), dateEcheance: day(7), statut: 'todo', type: 'tache', assignees: ['L', 1, 3] },
                 { id: 9, titre: 'Migration DB', priorite: '1', owner: 3, dateDebut: day(-3), dateEcheance: day(0), statut: 'review', type: 'tache', assignees: ['L', 1] },
-                { id: 10, titre: 'Formation équipe', priorite: '3', owner: 1, dateDebut: day(10), dateEcheance: day(14), statut: 'todo', type: 'reunion', assignees: ['L', 2, 3] }
+                { id: 10, titre: 'Formation équipe', priorite: '3', owner: 1, dateDebut: day(10), dateEcheance: day(14), statut: 'todo', type: 'tache', assignees: ['L', 2, 3] }
             ];
 
             sortEvents();
@@ -2502,7 +2455,7 @@
                     if (!eStart || !eEnd) return;
 
                     const ownerColor = getOwnerColor(event.owner);
-                    const jalon = isJalon(event);
+                    const jalon = event.type === 'jalon';
                     const top = idx * 44 + 10;
                     const startOffset = getDaysDiff(start, eStart);
                     const duration = Math.max(getDaysDiff(eStart, eEnd) + 1, 1);
