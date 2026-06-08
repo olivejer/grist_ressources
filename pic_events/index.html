@@ -120,6 +120,8 @@
         .grid-cell.today { background: rgba(79, 70, 229, 0.08); }
         .grid-cell.month-start { border-left: 1px solid var(--border); }
 
+        #tab-salles .main-content, #tab-salles .gantt-wrapper { height: 100%; min-height: 0; }
+
         /* Gantt Bars */
         .gantt-bar { position: absolute; height: 24px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; padding: 0 8px; font-size: 0.7rem; font-weight: 500; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 10; transition: all 0.15s; }
         .gantt-bar:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 20; }
@@ -387,10 +389,11 @@
 <body>
     <div class="tabs-container">
         <div class="tabs-bar">
-            <button class="tab-button active" onclick="switchTab('gantt', event)">Évènements v0.0.1</button>
+            <button class="tab-button active" onclick="switchTab('gantt', event)">Évènements</button>
             <button class="tab-button" onclick="switchTab('salles', event)">Salles</button>
             <!-- Autres onglets peuvent être ajoutés ici -->
         </div>
+        @jeromeolive - v0.0.1
         <div class="tabs-content">
             <div class="tab-pane active" id="tab-gantt">
     <div class="header">
@@ -1987,13 +1990,10 @@
         async function ensureSchema() {
             let created = 0, added = 0;
             const tablesCreated = [];
-            console.warn(`<<<<<<<>>>>>>>Start EnsureSchema`);
-
             for (const [tableName, columns] of Object.entries(EVENTFLOW_SCHEMA)) {
                 let existingCols = [], tableExists = false;
                 try { existingCols = Object.keys(await grist.docApi.fetchTable(tableName)).filter(c => c !== 'id' && c !== 'manualSort'); tableExists = true; }
                 catch (e) { 
-                    console.warn(`<<<<<<<>>>>>>>Table ${tableName} not found, creating...`);
                     try { await grist.docApi.applyUserActions([['AddTable', tableName, columns.map(c => ({ id: c.id, type: c.type }))]]); tablesCreated.push(tableName); created++; continue; } catch (e2) { continue; } }
                 if (tableExists) { const missing = columns.filter(c => !existingCols.includes(c.id)); for (const col of missing) { try { await grist.docApi.applyUserActions([['AddColumn', tableName, col.id, { type: col.type }]]); added++; } catch (e) {} } }
             }
