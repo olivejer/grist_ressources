@@ -1979,9 +1979,9 @@
         }
 
         const EVENTFLOW_SCHEMA = {
-            rooms: [{ id: 'nom', type: 'Text' }, { id: 'actif', type: 'Bool' }, { id: 'couleur', type: 'Text' }, { id: 'capacity', type: 'Numeric' }],  // rooms-01
-            owners: [{ id: 'nom', type: 'Text' }, { id: 'couleur', type: 'Text' }, { id: 'actif', type: 'Bool' }],
-            Events: [{ id: 'titre', type: 'Text' }, { id: 'description', type: 'Text' }, { id: 'dateDebut', type: 'Date' }, { id: 'dateEcheance', type: 'Date' }, { id: 'priorite', type: 'Choice' }, { id: 'statut', type: 'Choice' }, { id: 'owner', type: 'Ref:owners' }, { id: 'assignees', type: 'RefList:rooms' }, { id:'type', type: 'Choice' }, { id: 'dependDe', type:'RefList:Events' }, { id: 'tags', type:'ChoiceList' }, { id: 'estimationH', type:'Numeric' }, { id:'tempsPasse', type:'Numeric' }, { id:'couleur', type:'Text' }, { id: 'subevents', type: 'Text' }]
+            Rooms: [{ id: 'nom', type: 'Text' }, { id: 'actif', type: 'Bool' }, { id: 'couleur', type: 'Text' }, { id: 'capacity', type: 'Numeric' }],  // rooms-01
+            Owners: [{ id: 'nom', type: 'Text' }, { id: 'couleur', type: 'Text' }, { id: 'actif', type: 'Bool' }],
+            Events: [{ id: 'titre', type: 'Text' }, { id: 'description', type: 'Text' }, { id: 'dateDebut', type: 'Date' }, { id: 'dateEcheance', type: 'Date' }, { id: 'priorite', type: 'Choice' }, { id: 'statut', type: 'Choice' }, { id: 'owner', type: 'Ref:Owners' }, { id: 'assignees', type: 'RefList:Rooms' }, { id:'type', type: 'Choice' }, { id: 'dependDe', type:'RefList:Events' }, { id: 'tags', type:'ChoiceList' }, { id: 'estimationH', type:'Numeric' }, { id:'tempsPasse', type:'Numeric' }, { id:'couleur', type:'Text' }, { id: 'subevents', type: 'Text' }]
         };
 
         async function ensureSchema() {
@@ -2004,8 +2004,8 @@
 
         async function loadAllData() {
             try { events = convert(await grist.docApi.fetchTable('Events')); } catch (e) { events = []; }
-            try { rooms = convert(await grist.docApi.fetchTable('rooms')); } catch (e) { rooms = []; }
-            try { owners = convert(await grist.docApi.fetchTable('owners')); } catch (e) { owners = []; }
+            try { rooms = convert(await grist.docApi.fetchTable('Rooms')); } catch (e) { rooms = []; }
+            try { owners = convert(await grist.docApi.fetchTable('Owners')); } catch (e) { owners = []; }
             gristReady = true;
             sortEvents();
             sortRoomsBySalles();
