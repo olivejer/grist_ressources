@@ -601,7 +601,12 @@
         const formatDateISO = (d) => d ? d.toISOString().split('T')[0] : '';
         const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
         const isSameDay = (a, b) => a && b && a.toDateString() === b.toDateString();
-        const getDaysDiff = (a, b) => Math.round((b - a) / 86400000);
+        const getDaysDiff = (a, b) => {
+                    if (!a || !b) return 0;
+                    const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+                    const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+                    return Math.floor((utcB - utcA) / 86400000);
+                };
         const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
         const getEventPriority = (t) => (t?.priorite >= 1 && t?.priorite <= 4) ? parseInt(t.priorite) : 3;
 
@@ -979,7 +984,7 @@
             else eStart = new Date(eStart.getFullYear(), eStart.getMonth(), eStart.getDate());
 
             effectiveStart = eStart;
-            effectiveDays = Math.max(getDaysDiff(eStart, eEnd), vDays);
+            effectiveDays = Math.max(getDaysDiff(eStart, eEnd) + 1, vDays);
 
             // Nombre de cellules effectives selon l'unité de la vue
             const eCfg = VIEW_CONFIG[currentView];
@@ -2142,7 +2147,7 @@
             else eStart = new Date(eStart.getFullYear(), eStart.getMonth(), eStart.getDate());
 
             effectiveStartSalles = eStart;
-            effectiveDaysSalles = Math.max(getDaysDiff(eStart, eEnd), vDays);
+            effectiveDaysSalles = Math.max(getDaysDiff(eStart, eEnd) + 1, vDays);
 
             const eCfg = VIEW_CONFIG[currentViewSalles];
             let numCells;
