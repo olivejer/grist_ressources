@@ -991,7 +991,7 @@
             let numCells;
             if (eCfg.unit === 'month') {
                 const eEnd2 = addDays(eStart, effectiveDays);
-                numCells = Math.max(1, (eEnd2.getFullYear() - eStart.getFullYear()) * 12 + (eEnd2.getMonth() - eStart.getMonth()));
+                numCells = Math.max(1, (eEnd2.getFullYear() * 12 + eEnd2.getMonth()) - (eStart.getFullYear() * 12 + eStart.getMonth()));
             } else if (eCfg.unit === 'week') {
                 numCells = Math.ceil(effectiveDays / 7);
             } else {
@@ -1146,7 +1146,7 @@
             let numCells, totalWidth;
             if (cfg.unit === 'month') {
                 const effEnd = addDays(start, totalDays);
-                numCells = Math.max(1, (effEnd.getFullYear() - start.getFullYear()) * 12 + (effEnd.getMonth() - start.getMonth()));
+                numCells = Math.max(1, (effEnd.getFullYear() * 12 + effEnd.getMonth()) - (start.getFullYear() * 12 + start.getMonth()));
                 totalWidth = numCells * effectiveCellWidth;
             } else if (cfg.unit === 'week') {
                 numCells = Math.ceil(totalDays / 7);
@@ -2153,7 +2153,7 @@
             let numCells;
             if (eCfg.unit === 'month') {
                 const eEnd2 = addDays(eStart, effectiveDaysSalles);
-                numCells = Math.max(1, (eEnd2.getFullYear() - eStart.getFullYear()) * 12 + (eEnd2.getMonth() - eStart.getMonth()));
+                numCells = Math.max(1, (eEnd2.getFullYear() * 12 + eEnd2.getMonth()) - (eStart.getFullYear() * 12 + eStart.getMonth()));
             } else if (eCfg.unit === 'week') {
                 numCells = Math.ceil(effectiveDaysSalles / 7);
             } else {
@@ -2420,18 +2420,51 @@
         function renderTimelineSalles() {
             const start = effectiveStartSalles;
             const totalDays = effectiveDaysSalles;
+            const cfg = VIEW_CONFIG[currentViewSalles];
             const cellWidth = effectiveCellWidthSalles;
-            const totalWidth = totalDays * cellWidth;
+
+            let numCells, totalWidth;
+            if (cfg.unit === 'month') {
+                const effEnd = addDays(start, totalDays);
+                numCells = Math.max(1, (effEnd.getFullYear() * 12 + effEnd.getMonth()) - (start.getFullYear() * 12 + start.getMonth()));
+                totalWidth = numCells * cellWidth;
+            } else if (cfg.unit === 'week') {
+                numCells = Math.ceil(totalDays / 7);
+                totalWidth = numCells * cellWidth;
+            } else {
+                numCells = totalDays;
+                totalWidth = totalDays * cellWidth;
+            }
+
             const activeRooms = rooms.filter(r => r.actif !== false);
+            const pxPerDay = effectivePxPerDaySalles;
 
             let gridHtml = '';
             activeRooms.forEach(() => {
                 gridHtml += '<div class="grid-row">';
-                for (let i = 0; i < totalDays; i++) {
-                    const d = addDays(start, i);
-                    const isWe = isWeekend(d);
-                    const isT = isSameDay(d, new Date());
-                    gridHtml += '<div class="grid-cell ' + (isWe ? 'weekend ' : '') + (isT ? 'today ' : '') + '" style="width:' + cellWidth + 'px"></div>';
+                if (cfg.unit === 'month') {
+                    const effEnd = addDays(start, totalDays);
+                    let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+                    while (cur < effEnd) {
+                        const m = cur.getMonth();
+                        const y = cur.getFullYear();
+                        const isCurrentMonth = (new Date().getMonth() === m && new Date().getFullYear() === y);
+                        gridHtml += '<div class="grid-cell ' + (isCurrentMonth ? 'today' : '') + '" style="width:' + cellWidth + 'px"></div>';
+                        cur = new Date(y, m + 1, 1);
+                    }
+                } else if (cfg.unit === 'week') {
+                    for (let i = 0; i < totalDays; i += 7) {
+                        const d = addDays(start, i);
+                        const isT = new Date() >= d && new Date() < addDays(d, 7);
+                        gridHtml += '<div class="grid-cell ' + (isT ? 'today' : '') + '" style="width:' + cellWidth + 'px"></div>';
+                    }
+                } else {
+                    for (let i = 0; i < totalDays; i++) {
+                        const d = addDays(start, i);
+                        const isWe = isWeekend(d);
+                        const isT = isSameDay(d, new Date());
+                        gridHtml += '<div class="grid-cell ' + (isWe ? 'weekend ' : '') + (isT ? 'today ' : '') + '" style="width:' + cellWidth + 'px"></div>';
+                    }
                 }
                 gridHtml += '</div>';
             });
@@ -2447,7 +2480,7 @@
             if (todayOffset >= 0 && todayOffset <= totalDays) {
                 const todayLine = document.createElement('div');
                 todayLine.className = 'today-line';
-                todayLine.style.left = Math.round(todayOffset * cellWidth) + 'px';
+                todayLine.style.left = Math.round(todayOffset * pxPerDay) + 'px';
                 grid.appendChild(todayLine);
             }
 
@@ -2464,8 +2497,8 @@
                     const top = idx * 44 + 10;
                     const startOffset = getDaysDiff(start, eStart);
                     const duration = Math.max(getDaysDiff(eStart, eEnd) + 1, 1);
-                    const left = Math.round(startOffset * cellWidth);
-                    const width = Math.round(duration * cellWidth);
+                    const left = Math.round(startOffset * pxPerDay);
+                    const width = Math.round(duration * pxPerDay);
 
                     if (left + width < -50 || left > totalWidth + 50) return;
 
@@ -2565,4 +2598,4 @@
         
     </script>
 </body>
-</html>
+</html>     
