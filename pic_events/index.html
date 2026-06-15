@@ -598,21 +598,21 @@
         const dateToGrist = (d) => d ? Math.floor(d.getTime() / 1000) : null;
         const formatDate = (d) => d ? new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(d) : '-';
         const formatDateShort = (d) => d ? new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(d) : '-';
-        const formatDateISO = (d) => d ? d.toISOString().split('T')[0] : '';
-        const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
-        const isSameDay = (a, b) => a && b && a.toDateString() === b.toDateString();
+        const formatDateISO = (d) => d ? d.toISOString().split('T')[0] : ''; // toISOString est toujours UTC
+        const isWeekend = (d) => d.getUTCDay() === 0 || d.getUTCDay() === 6;
+        const isSameDay = (a, b) => a && b && a.getUTCFullYear() === b.getUTCFullYear() && a.getUTCMonth() === b.getUTCMonth() && a.getUTCDate() === b.getUTCDate();
         const getDaysDiff = (a, b) => {
                     if (!a || !b) return 0;
-                    const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
-                    const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
-                    return Math.floor((utcB - utcA) / 86400000);
+                    const utcA = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
+                    const utcB = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate());
+                    return Math.round((utcB - utcA) / 86400000);
                 };
-        const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+        const addDays = (d, n) => { const r = new Date(d); r.setUTCDate(r.getUTCDate() + n); return r; };
         const getEventPriority = (t) => (t?.priorite >= 1 && t?.priorite <= 4) ? parseInt(t.priorite) : 3;
 
 
         function showToast(msg, type = 'info') { const c = document.getElementById('toastContainer'); const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg; c.appendChild(t); setTimeout(() => t.remove(), 3000); }
-        
+
         // GEN-03: Export functions
         function exportPrint() {
             document.querySelectorAll('.filter-menu').forEach(m => m.classList.remove('open'));
@@ -742,12 +742,12 @@
         // ═══════════════════════════════════════════════════════════════════════
         // DATE CALCULATIONS
         // ═══════════════════════════════════════════════════════════════════════
-        function getStartOfWeek(d) { const r = new Date(d); const day = r.getDay(); r.setDate(r.getDate() - day + (day === 0 ? -6 : 1)); r.setHours(0, 0, 0, 0); return r; }
-        function getStartOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
-        function getStartOfQuarter(d) { return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1); }
-        function getStartOfSemester(d) { return new Date(d.getFullYear(), Math.floor(d.getMonth() / 6) * 6, 1); }
-        function getStartOfYear(d) { return new Date(d.getFullYear(), 0, 1); }
-        function getWeekNumber(d) { const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day); const year = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil((((t - year) / 86400000) + 1) / 7); }
+        function getStartOfWeek(d) { const r = new Date(d); const day = r.getUTCDay(); r.setUTCDate(r.getUTCDate() - day + (day === 0 ? -6 : 1)); r.setUTCHours(0, 0, 0, 0); return r; }
+        function getStartOfMonth(d) { return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)); }
+        function getStartOfQuarter(d) { return new Date(Date.UTC(d.getUTCFullYear(), Math.floor(d.getUTCMonth() / 3) * 3, 1)); }
+        function getStartOfSemester(d) { return new Date(Date.UTC(d.getUTCFullYear(), Math.floor(d.getUTCMonth() / 6) * 6, 1)); }
+        function getStartOfYear(d) { return new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); }
+        function getWeekNumber(d) { const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day); const year = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil((((t - year) / 86400000) + 1) / 7); }
         function getViewStartDate() {
             switch (currentView) {
                 case 'week': return getStartOfWeek(viewStartDate);
@@ -786,14 +786,17 @@
         function navigate(dir) {
             const cfg = VIEW_CONFIG[currentView];
             if (typeof cfg.navStep === 'number') viewStartDate = addDays(viewStartDate, dir * cfg.navStep);
-            else if (cfg.navStep === 'month') viewStartDate = new Date(viewStartDate.getFullYear(), viewStartDate.getMonth() + dir, 1);
-            else if (cfg.navStep === 'quarter') viewStartDate = new Date(viewStartDate.getFullYear(), viewStartDate.getMonth() + dir * 3, 1);
-            else if (cfg.navStep === 'semester') viewStartDate = new Date(viewStartDate.getFullYear(), viewStartDate.getMonth() + dir * 6, 1);
-            else if (cfg.navStep === 'year') viewStartDate = new Date(viewStartDate.getFullYear() + dir, 0, 1);
+            else if (cfg.navStep === 'month') viewStartDate = new Date(Date.UTC(viewStartDate.getUTCFullYear(), viewStartDate.getUTCMonth() + dir, 1));
+            else if (cfg.navStep === 'quarter') viewStartDate = new Date(Date.UTC(viewStartDate.getUTCFullYear(), viewStartDate.getUTCMonth() + dir * 3, 1));
+            else if (cfg.navStep === 'semester') viewStartDate = new Date(Date.UTC(viewStartDate.getUTCFullYear(), viewStartDate.getUTCMonth() + dir * 6, 1));
+            else if (cfg.navStep === 'year') viewStartDate = new Date(Date.UTC(viewStartDate.getUTCFullYear() + dir, 0, 1));
             render();
         }
-        function goToToday() { viewStartDate = new Date(); render(); }
-
+        function goToToday() { 
+            const now = new Date();
+            viewStartDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            render(); 
+        }
         function fitToEvents() {
             const ft = getFilteredEvents();
             if (ft.length === 0) { goToToday(); return; }
@@ -840,10 +843,10 @@
             let text = '';
             switch (currentView) {
                 case 'week': text = 'S' + getWeekNumber(start) + ' · ' + formatDateShort(start) + ' - ' + formatDateShort(addDays(start, 6)); break;
-                case 'month': text = MONTHS[start.getMonth()] + ' ' + start.getFullYear(); break;
-                case 'quarter': text = 'T' + (Math.floor(start.getMonth() / 3) + 1) + ' ' + start.getFullYear(); break;
-                case 'semester': text = 'S' + (Math.floor(start.getMonth() / 6) + 1) + ' ' + start.getFullYear(); break;
-                case 'year': text = start.getFullYear().toString(); break;
+                case 'month': text = MONTHS[start.getUTCMonth()] + ' ' + start.getUTCFullYear(); break;
+                case 'quarter': text = 'T' + (Math.floor(start.getUTCMonth() / 3) + 1) + ' ' + start.getUTCFullYear(); break;
+                case 'semester': text = 'S' + (Math.floor(start.getUTCMonth() / 6) + 1) + ' ' + start.getUTCFullYear(); break;
+                case 'year': text = start.getUTCFullYear().toString(); break;
             }
             document.getElementById('currentPeriod').textContent = text;
         }
@@ -981,33 +984,38 @@
             // Aligner le début sur la frontière de la grille
             if (cfg.unit === 'week') eStart = getStartOfWeek(eStart);
             else if (cfg.unit === 'month') eStart = getStartOfMonth(eStart);
-            else eStart = new Date(eStart.getFullYear(), eStart.getMonth(), eStart.getDate());
+            else eStart = new Date(Date.UTC(eStart.getUTCFullYear(), eStart.getUTCMonth(), eStart.getUTCDate()));
 
             effectiveStart = eStart;
-            effectiveDays = Math.max(getDaysDiff(eStart, eEnd) + 1, vDays);
+            const totalSpanDays = getDaysDiff(eStart, eEnd) + 1;
 
-            // Nombre de cellules effectives selon l'unité de la vue
-            const eCfg = VIEW_CONFIG[currentView];
+            // Calculer numCells et jours réels couverts par la grille
             let numCells;
-            if (eCfg.unit === 'month') {
-                const eEnd2 = addDays(eStart, effectiveDays);
-                numCells = Math.max(1, (eEnd2.getFullYear() - eStart.getFullYear()) * 12 + (eEnd2.getMonth() - eStart.getMonth()));
-            } else if (eCfg.unit === 'week') {
-                numCells = Math.ceil(effectiveDays / 7);
+            let daysInGrid;
+            if (cfg.unit === 'month') {
+                numCells = Math.max(1, (eEnd.getUTCFullYear() - eStart.getUTCFullYear()) * 12 + (eEnd.getUTCMonth() - eStart.getUTCMonth()));
+                const gridEnd = new Date(Date.UTC(eStart.getUTCFullYear(), eStart.getUTCMonth() + numCells, 1));
+                daysInGrid = getDaysDiff(eStart, gridEnd);
+            } else if (cfg.unit === 'week') {
+                numCells = Math.ceil(totalSpanDays / 7);
+                daysInGrid = numCells * 7;
             } else {
-                numCells = effectiveDays;
+                numCells = Math.max(totalSpanDays, vDays);
+                daysInGrid = numCells;
             }
+
+            effectiveDays = daysInGrid;
 
             // Largeur de cellule : remplit la largeur disponible, min = cfg.cellWidth
             const timelineEl = document.getElementById('timelineScroll');
             const availableWidth = (timelineEl && timelineEl.clientWidth > 10) ? timelineEl.clientWidth : 600;
-            effectiveCellWidth = Math.max(eCfg.cellWidth, Math.floor(availableWidth / numCells));
+            effectiveCellWidth = Math.max(cfg.cellWidth, Math.floor(availableWidth / numCells));
 
             // Mettre à jour --cell-width pour les vues jour (Sem/Mois)
             document.documentElement.style.setProperty('--cell-width', effectiveCellWidth + 'px');
 
             // pxPerDay depuis le ratio réel (précis même en vue année)
-            effectivePxPerDay = effectiveDays > 0 ? (numCells * effectiveCellWidth) / effectiveDays : eCfg.cellWidth;
+            effectivePxPerDay = effectiveDays > 0 ? (numCells * effectiveCellWidth) / effectiveDays : cfg.cellWidth;
         }
 
         function renderTimelineHeader() {
@@ -1055,7 +1063,7 @@
                     let labelDate = null;
                     for (let j = 0; j < 7; j++) {
                         const d = addDays(start, i + j);
-                        if (d.getDay() === 1) { labelDate = d; break; }
+                        if (d.getUTCDay() === 1) { labelDate = d; break; }
                     }
                     if (!labelDate) labelDate = addDays(start, i);
                     const isCurrentWeek = new Date() >= addDays(start, i) && new Date() < addDays(start, i + 7);
@@ -1067,7 +1075,7 @@
                 let currentMonth = -1, monthStartIdx = 0;
                 for (let i = 0; i < totalDays; i++) {
                     const d = addDays(start, i);
-                    const m = d.getMonth();
+                    const m = d.getUTCMonth();
                     if (m !== currentMonth) {
                         if (currentMonth !== -1) {
                             monthsHtml += '<div class="month-cell" style="width:' + ((i - monthStartIdx) * effectiveCellWidth) + 'px">' + MONTHS_SHORT[currentMonth] + '</div>';
@@ -1077,7 +1085,7 @@
                     }
                     const isWe = isWeekend(d);
                     const isT = isSameDay(d, new Date());
-                    const isMonthStart = d.getDate() === 1;
+                    const isMonthStart = d.getUTCDate() === 1;
                     daysHtml += '<div class="day-cell ' + (isWe ? 'weekend ' : '') + (isT ? 'today ' : '') + (isMonthStart ? 'month-start' : '') + '" style="width:' + effectiveCellWidth + 'px">' + d.getDate() + '</div>';
                 }
                 monthsHtml += '<div class="month-cell" style="width:' + ((totalDays - monthStartIdx) * effectiveCellWidth) + 'px">' + MONTHS_SHORT[currentMonth] + '</div>';
@@ -1182,7 +1190,7 @@
                         const d = addDays(start, i);
                         const isWe = isWeekend(d);
                         const isT = isSameDay(d, new Date());
-                        const isMonthStart = d.getDate() === 1;
+                        const isMonthStart = d.getUTCDate() === 1;
                         gridHtml += '<div class="grid-cell ' + (isWe ? 'weekend ' : '') + (isT ? 'today ' : '') + (isMonthStart ? 'month-start' : '') + '" style="width:' + effectiveCellWidth + 'px"></div>';
                     }
                 }
@@ -1598,7 +1606,8 @@
         function setTodayDate() {
             const data = panelState.editData;
             if (!data) return;
-            const today = new Date();
+            const now = new Date();
+            const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
             today.setHours(12, 0, 0, 0);
             data.dateDebut = dateToGrist(today);
             syncLocalEvent();
@@ -2169,8 +2178,8 @@
                 }
             }
             if (availableWidth <= 10) availableWidth = 600;
-            effectiveCellWidthSalles = Math.max(eCfg.cellWidth, Math.floor(availableWidth / numCells));
-            effectivePxPerDaySalles = effectiveDaysSalles > 0 ? (numCells * effectiveCellWidthSalles) / effectiveDaysSalles : eCfg.cellWidth;
+            effectiveCellWidthSalles = Math.max(cfg.cellWidth, Math.floor(availableWidth / numCells));
+            effectivePxPerDaySalles = effectiveDaysSalles > 0 ? (numCells * effectiveCellWidthSalles) / effectiveDaysSalles : cfg.cellWidth;
         }
 
         function navigateSalles(dir) {
@@ -2178,13 +2187,13 @@
             if (typeof cfg.navStep === 'number') {
                 viewStartDateSalles = addDays(viewStartDateSalles, dir * cfg.navStep);
             } else if (cfg.navStep === 'month') {
-                viewStartDateSalles = new Date(viewStartDateSalles.getFullYear(), viewStartDateSalles.getMonth() + dir, 1);
+                viewStartDateSalles = new Date(Date.UTC(viewStartDateSalles.getUTCFullYear(), viewStartDateSalles.getUTCMonth() + dir, 1));
             } else if (cfg.navStep === 'quarter') {
-                viewStartDateSalles = new Date(viewStartDateSalles.getFullYear(), viewStartDateSalles.getMonth() + dir * 3, 1);
+                viewStartDateSalles = new Date(Date.UTC(viewStartDateSalles.getUTCFullYear(), viewStartDateSalles.getUTCMonth() + dir * 3, 1));
             } else if (cfg.navStep === 'semester') {
-                viewStartDateSalles = new Date(viewStartDateSalles.getFullYear(), viewStartDateSalles.getMonth() + dir * 6, 1);
+                viewStartDateSalles = new Date(Date.UTC(viewStartDateSalles.getUTCFullYear(), viewStartDateSalles.getUTCMonth() + dir * 6, 1));
             } else if (cfg.navStep === 'year') {
-                viewStartDateSalles = new Date(viewStartDateSalles.getFullYear() + dir, 0, 1);
+                viewStartDateSalles = new Date(Date.UTC(viewStartDateSalles.getUTCFullYear() + dir, 0, 1));
             }
             renderSalles();
         }
@@ -2318,10 +2327,10 @@
             let text = '';
             switch (currentViewSalles) {
                 case 'week': text = 'S' + getWeekNumber(start) + ' · ' + formatDateShort(start) + ' - ' + formatDateShort(addDays(start, 6)); break;
-                case 'month': text = MONTHS[start.getMonth()] + ' ' + start.getFullYear(); break;
-                case 'quarter': text = 'T' + (Math.floor(start.getMonth() / 3) + 1) + ' ' + start.getFullYear(); break;
-                case 'semester': text = 'S' + (Math.floor(start.getMonth() / 6) + 1) + ' ' + start.getFullYear(); break;
-                case 'year': text = start.getFullYear().toString(); break;
+                case 'month': text = MONTHS[start.getUTCMonth()] + ' ' + start.getUTCFullYear(); break;
+                case 'quarter': text = 'T' + (Math.floor(start.getUTCMonth() / 3) + 1) + ' ' + start.getUTCFullYear(); break;
+                case 'semester': text = 'S' + (Math.floor(start.getUTCMonth() / 6) + 1) + ' ' + start.getUTCFullYear(); break;
+                case 'year': text = start.getUTCFullYear().toString(); break;
             }
             document.getElementById('currentPeriodSalles').textContent = text;
         }
@@ -2334,15 +2343,15 @@
 
             if (cfg.unit === 'month') {
                 const effEnd = addDays(start, totalDays);
-                let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+                let cur = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
                 let idx = 0;
                 while (cur < effEnd) {
-                    const m = cur.getMonth();
-                    const y = cur.getFullYear();
-                    const isCurrentMonth = (new Date().getMonth() === m && new Date().getFullYear() === y);
-                    monthsHtml += '<div class="month-cell" style="width:' + effectiveCellWidthSalles + 'px">' + (m === 0 || idx === 0 ? y : '') + '</div>';
+                    const m = cur.getUTCMonth();
+                    const y = cur.getUTCFullYear();
+                    const isCurrentMonth = (new Date().getUTCMonth() === m && new Date().getUTCFullYear() === y);
+                    monthsHtml += '<div class="month-cell" style="width:' + effectiveCellWidthSalles + 'px">' + (m === 0 ? y : '') + '</div>';
                     daysHtml += '<div class="day-cell ' + (isCurrentMonth ? 'today' : '') + '" style="width:' + effectiveCellWidthSalles + 'px">' + MONTHS_SHORT[m] + '</div>';
-                    cur = new Date(y, m + 1, 1);
+                    cur = new Date(Date.UTC(y, m + 1, 1));
                     idx++;
                 }
             } else if (cfg.unit === 'week') {
@@ -2350,9 +2359,9 @@
                 let curGroup = null;
                 for (let i = 0; i < totalDays; i += 7) {
                     const d = addDays(start, i);
-                    const monthKey = d.getFullYear() * 100 + d.getMonth();
+                    const monthKey = d.getUTCFullYear() * 100 + d.getUTCMonth();
                     if (!curGroup || curGroup.key !== monthKey) {
-                        curGroup = { key: monthKey, month: d.getMonth(), year: d.getFullYear(), cells: 0 };
+                        curGroup = { key: monthKey, month: d.getUTCMonth(), year: d.getUTCFullYear(), cells: 0 };
                         weekGroups.push(curGroup);
                     }
                     curGroup.cells++;
@@ -2366,7 +2375,7 @@
                     let labelDate = null;
                     for (let j = 0; j < 7; j++) {
                         const d = addDays(start, i + j);
-                        if (d.getDay() === 1) { labelDate = d; break; }
+                        if (d.getUTCDay() === 1) { labelDate = d; break; }
                     }
                     if (!labelDate) labelDate = addDays(start, i);
                     const isCurrentWeek = new Date() >= addDays(start, i) && new Date() < addDays(start, i + 7);
@@ -2376,7 +2385,7 @@
                 let currentMonth = -1, monthStartIdx = 0;
                 for (let i = 0; i < totalDays; i++) {
                     const d = addDays(start, i);
-                    const m = d.getMonth();
+                    const m = d.getUTCMonth();
                     if (m !== currentMonth) {
                         if (currentMonth !== -1) {
                             monthsHtml += '<div class="month-cell" style="width:' + ((i - monthStartIdx) * effectiveCellWidthSalles) + 'px">' + MONTHS_SHORT[currentMonth] + '</div>';
@@ -2387,7 +2396,8 @@
                     const isWe = isWeekend(d);
                     const isT = isSameDay(d, new Date());
                     const isMonthStart = d.getDate() === 1;
-                    daysHtml += '<div class="day-cell ' + (isWe ? 'weekend ' : '') + (isT ? 'today ' : '') + (isMonthStart ? 'month-start' : '') + '" style="width:' + effectiveCellWidthSalles + 'px">' + d.getDate() + '</div>';
+                    const isMonthStart = d.getUTCDate() === 1;
+                    daysHtml += '<div class="day-cell ' + (isWe ? 'weekend ' : '') + (isT ? 'today ' : '') + (isMonthStart ? 'month-start' : '') + '" style="width:' + effectiveCellWidthSalles + 'px">' + d.getUTCDate() + '</div>';
                 }
                 monthsHtml += '<div class="month-cell" style="width:' + ((totalDays - monthStartIdx) * effectiveCellWidthSalles) + 'px">' + MONTHS_SHORT[currentMonth] + '</div>';
             }
@@ -2421,6 +2431,7 @@
             const start = effectiveStartSalles;
             const totalDays = effectiveDaysSalles;
             const cellWidth = effectiveCellWidthSalles;
+            const pxPerDay = effectivePxPerDaySalles;
             const totalWidth = totalDays * cellWidth;
             const activeRooms = rooms.filter(r => r.actif !== false);
 
@@ -2464,8 +2475,8 @@
                     const top = idx * 44 + 10;
                     const startOffset = getDaysDiff(start, eStart);
                     const duration = Math.max(getDaysDiff(eStart, eEnd) + 1, 1);
-                    const left = Math.round(startOffset * cellWidth);
-                    const width = Math.round(duration * cellWidth);
+                    const left = Math.round(startOffset * pxPerDay);
+                    const width = Math.round(duration * pxPerDay);
 
                     if (left + width < -50 || left > totalWidth + 50) return;
 
