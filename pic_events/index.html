@@ -763,14 +763,14 @@
             const cfg = VIEW_CONFIG[currentView]; 
             if (cfg.unit === 'day') return cfg.days; 
             if (cfg.unit === 'week') return cfg.weeks * 7; 
-            if (cfg.unit === 'month') return cfg.months * 30; // Approximation pour vue année
+            if (cfg.unit === 'month') return Math.round(cfg.months * 30.5); // Approximation pour vue année
             return cfg.days; 
         }
         function getPixelsPerDay() { 
             const cfg = VIEW_CONFIG[currentView]; 
             if (cfg.unit === 'day') return cfg.cellWidth; 
             if (cfg.unit === 'week') return cfg.cellWidth / 7; 
-            if (cfg.unit === 'month') return cfg.cellWidth / 30; // Approximation pour vue année
+            if (cfg.unit === 'month') return Math.round(cfg.cellWidth / 30.5); // Approximation pour vue année
             return cfg.cellWidth; 
         }
 
