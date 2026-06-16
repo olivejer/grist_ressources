@@ -1306,7 +1306,7 @@
             });
 
             html += '<div class="legend-separator"></div>';
-            html += '<div class="legend-item"><div class="legend-milestone"></div>v150626-1548</div>';
+            html += '<div class="legend-item"><div class="legend-milestone"></div>version-160626-1510</div>';
 
             legend.innerHTML = html;
         }
@@ -1557,9 +1557,8 @@
                 (!panelState.isNew ?
                     '<div class="panel-footer-left"><button class="panel-btn danger" onclick="showDeleteConfirm()" style="width:auto;padding:10px 14px">Suppr.</button></div><div class="delete-confirm" id="deleteConfirm"><div class="delete-confirm-text">Supprimer ?</div><div class="delete-confirm-actions"><button class="delete-confirm-btn cancel" onclick="hideDeleteConfirm()">Annuler</button><button class="delete-confirm-btn confirm" onclick="confirmDelete()">Supprimer</button></div></div>' : '');
 
-            if (panelState.isNew) {
-                const canCreate = data.titre && data.titre.trim().length > 0;
-                footer.innerHTML = '<button class="panel-btn success" onclick="createEvent()" ' + (!canCreate ? 'disabled' : '') + '>Créer l\'événement</button>';
+            if (panelState.isNew) { // Only show create button for new events
+                footer.innerHTML = '<button class="panel-btn success" onclick="createEvent()" ' + (!isPanelFormValid() ? 'disabled' : '') + '>Créer l\'événement</button>';
             } else {
                 footer.innerHTML = '';
             }
@@ -1568,6 +1567,17 @@
         // ═══════════════════════════════════════════════════════════════════════
         // FIELD HANDLERS
         // ═══════════════════════════════════════════════════════════════════════
+        /**
+         * Checks if the current event panel form data is valid for creation/saving.
+         * @returns {boolean} True if the form is valid, false otherwise.
+         */
+        function isPanelFormValid() {
+            const data = panelState.editData;
+            if (!data) return false;
+            if (!data.titre || data.titre.trim().length === 0) return false;
+            if (data.dateDebut && data.dateEcheance && data.dateDebut > data.dateEcheance) return false;
+            return true;
+        }
         function updateField(field, value, noSave) {
             const data = panelState.editData;
             if (!data) return;
@@ -1581,17 +1591,12 @@
             // FIX: Synchroniser le event local pour affichage immédiat
             syncLocalEvent();
 
-            const visualFields = ['type', 'priorite', 'statut', 'owner', 'dateDebut', 'dateEcheance'];
+            // Always re-render panel if a field that affects its display or validation changes
+            const visualFields = ['titre', 'type', 'priorite', 'statut', 'owner', 'dateDebut', 'dateEcheance'];
             if (visualFields.includes(field)) {
                 renderPanel();
                 if (!panelState.isNew) render();
             }
-
-            if (field === 'titre' && panelState.isNew) {
-                const btn = document.querySelector('.panel-footer .panel-btn');
-                if (btn) btn.disabled = !value || !value.trim();
-            }
-
             if (!panelState.isNew && !noSave && gristReady) saveEventToGrist();
         }
 
@@ -2599,4 +2604,4 @@
         
     </script>
 </body>
-</html>     
+</html>
