@@ -55,17 +55,6 @@
         .filter-btn.active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
         .filter-menu { position: absolute; top: 100%; left: 0; margin-top: 4px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg); min-width: 160px; z-index: 200; display: none; max-height: 280px; overflow-y: auto; padding: 6px; }
         .filter-menu.open { display: block; }
-        
-        /* Switch Toggle */
-        .filter-switch { display: flex; align-items: center; gap: 8px; margin-right: 12px; padding-right: 12px; border-right: 1px solid var(--border); }
-        .switch { position: relative; display: inline-block; width: 34px; height: 18px; flex-shrink: 0; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-dark); transition: .2s; border-radius: 18px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .2s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(16px); }
-        .switch-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; cursor: pointer; white-space: nowrap; }
-
         .filter-option { padding: 6px 8px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; border-radius: 4px; }
         .filter-option:hover { background: var(--bg); }
         .filter-option.active { background: var(--primary-light); color: var(--primary); }
@@ -421,13 +410,6 @@
             </div>
         </div>
         <div class="header-right">
-            <div class="filter-switch">
-                <label class="switch">
-                    <input type="checkbox" id="hideDoneEvents" onchange="toggleHideDone(this.checked)">
-                    <span class="slider"></span>
-                </label>
-                <span class="switch-label" onclick="document.getElementById('hideDoneEvents').click()">Masquer terminés</span>
-            </div>
             <div class="filter-dropdown" id="filterOwner">
                 <div class="filter-btn" onclick="toggleFilterMenu('filterOwner')"><span id="filterOwnerLabel">Propriétaire ▾</span></div>
                 <div class="filter-menu" id="filterOwnerMenu"></div>
@@ -445,7 +427,7 @@
     <div class="main-content">
         <div class="gantt-wrapper" id="ganttWrapper">
             <div class="gantt-header">
-                <div class="event-list-header"><span>Évènements</span><span id="eventCount" style="font-size:0.7rem;color:var(--text-muted);">0</span></div>
+                <div class="event-list-header"><span>Événements</span><span id="eventCount" style="font-size:0.7rem;color:var(--text-muted);">0</span></div>
                 <div class="timeline-header" id="timelineHeader">
                     <div class="timeline-header-scroll" id="timelineHeaderScroll">
                         <div class="timeline-header-months" id="monthsHeader"></div>
@@ -583,7 +565,6 @@
         let sortMode = localStorage.getItem('eventflow_gantt_sort') || 'priority';
         let sortableInstance = null;
         let filters = { owner: [], assignee: [], priority: [] };  // GEN-02: Arrays pour compatibilité inter-widgets
-        let filters = { owner: [], assignee: [], priority: [], hideDone: localStorage.getItem('eventflow_hide_done') === 'true' };  // GEN-02: Arrays pour compatibilité inter-widgets
         let dragState = { active: false, type: null, eventId: null, startX: 0, originalLeft: 0, originalWidth: 0, originalStart: null, originalEnd: null };
         let panelState = { open: false, isNew: false, eventId: null, eventIndex: -1, eventList: [], editData: null };
         let overlayPointerStart = { x: 0, y: 0 };
@@ -841,14 +822,6 @@
             else if (sortMode === 'date') events.sort((a, b) => (a.dateDebut || 0) - (b.dateDebut || 0));
         }
         function toggleFilterMenu(id) { const m = document.querySelector('#' + id + ' .filter-menu'); const open = m.classList.contains('open'); document.querySelectorAll('.filter-menu').forEach(x => x.classList.remove('open')); if (!open) m.classList.add('open'); }
-        
-        function toggleHideDone(checked) {
-            filters.hideDone = checked;
-            localStorage.setItem('eventflow_hide_done', checked);
-            render();
-            if (typeof renderSalles === 'function') renderSalles();
-        }
-
         // GEN-02: Gestion des filtres avec arrays et synchronisation
         function toggleFilter(key, val) { 
             const arr = filters[key]; 
@@ -919,7 +892,6 @@
             document.getElementById('activeFilters').innerHTML = chips.join('');
         }
         function eventMatchesFilters(t) {
-            if (filters.hideDone && t.statut === 'done') return false;
             if (filters.owner.length && !filters.owner.includes(t.owner)) return false;
             if (filters.assignee.length && !getAssigneesArray(t).some(a => filters.assignee.includes(a))) return false;
             if (filters.priority.length && !filters.priority.includes(getEventPriority(t))) return false;
@@ -2478,7 +2450,6 @@
 
             activeRooms.forEach((room, idx) => {
                 events.forEach(event => {
-                    if (filters.hideDone && event.statut === 'done') return;
                     if (!getAssigneesArray(event).includes(room.id)) return;
 
                     const eStart = gristToDate(event.dateDebut);
@@ -2586,12 +2557,6 @@
         if (activeTab !== 'gantt') {
             switchTab(activeTab);
         }
-        
-        // Initialiser l'état du switch "Masquer terminés"
-        if (document.getElementById('hideDoneEvents')) {
-            document.getElementById('hideDoneEvents').checked = filters.hideDone;
-        }
-
         initGrist();
         //useDemoMode();
         
